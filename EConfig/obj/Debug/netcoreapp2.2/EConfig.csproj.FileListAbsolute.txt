@@ -1,0 +1,12 @@
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\EConfig.deps.json
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\EConfig.runtimeconfig.json
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\EConfig.runtimeconfig.dev.json
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\EConfig.dll
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\EConfig.pdb
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.csprojAssemblyReference.cache
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.csproj.CoreCompileInputs.cache
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.AssemblyInfoInputs.cache
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.AssemblyInfo.cs
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.dll
+d:\projects\EConfig\EConfig\obj\Debug\netcoreapp2.2\EConfig.pdb
+d:\projects\EConfig\EConfig\bin\Debug\netcoreapp2.2\NLog.config
