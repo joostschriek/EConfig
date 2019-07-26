@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using Jil;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Security;
@@ -16,30 +22,68 @@ namespace EConfig
     class Program
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
-        
+
+        private static string configFilename = "appsettings.json";
+
         public static void Main(string[] args)
         {
-            bool generateKeys = false;
+            bool load = false;
 
-            var cmds = new CommandSet("EConfig")
+            var keyOptions = new OptionSet
             {
-                "usage: <command> [<args>]",
-                
+                {"load", "Verifies and makes the key findable for the later operations.", s => load = true}
 
-                new Command("generate", "Writes a new public and private key to the console")
-                {
-                    Options = new OptionSet
-                    {
-                        {"pem", "Outputs the private key to the console in pem format.", v => logger.Info("PEM")}
-                    }
-                },
-                new Command("load", "Loads a new key from the given path"),
+            };
+            var encryptOptions = new OptionSet
+            {
+                {"file", "The file to load and encrypt (defaults to appsettings.json)", s => configFilename = s }
             };
 
-
-
+            var cmds = new CommandSet("EncryptedConfig")
+            {
+                new Command("key", "Key generation and loading. Will wirte a new key to the output ")
+                {  
+                    Options = keyOptions,
+                    Run = pargs => { GenerateAndWriteKeys() }
+                },
+                new Command("encrypt")
+                {
+                    Options = encryptOptions,
+                    Run = Encrypt
+                }
+            };
+            
             cmds.Run(args);
         }
+        
+
+        private static void Encrypt(IEnumerable<string> pargs)
+        {
+            // We assume there is a property in at the root of the json that is called publickKey and holds our public key for writing values.
+            var publickKey = FindPublicKey(configFilename);
+        }
+
+
+        private static AsymmetricKeyParameter FindPublicKey(string filename)
+        {
+            AsymmetricKeyParameter publikcKey = null;
+
+            Dictionary<string, object> config;
+            using (var configStream = File.OpenText(filename))
+            {
+                config = JSON.Deserialize<Dictionary<string, object>>(configStream);
+            }
+
+            string hexedPublicKey;
+            if (config.ContainsKey("publicKey"))
+            {
+                var bytesPublickey = FromHexToByte(config["publicKey"] as string);
+                publikcKey = PublicKeyFactory.CreateKey(bytesPublickey);
+            }
+
+            return publikcKey;
+        }
+
 
         private static void GenerateAndWriteKeys()
         {
