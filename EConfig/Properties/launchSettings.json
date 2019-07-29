@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EConfig": {
+      "commandName": "Project",
+      "commandLineArgs": "encrypt"
+    }
+  }
+}
