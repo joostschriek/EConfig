@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Cryptography;
+using EConfig.Helpers;
 using Mono.Options;
 using NLog;
 using Org.BouncyCastle.Asn1.Pkcs;
@@ -9,7 +10,7 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using static EConfig.Helpers;
+
 
 namespace EConfig.Services
 {
@@ -18,12 +19,14 @@ namespace EConfig.Services
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
         private bool load = false;
+        private int keySize = 128;
 
         public KeyCommand() : base("key", "Key generation and loading. Will wirte a new key to the output ")
         {
             Options = new OptionSet
             {
-                {"load", "Verifies and makes the key findable for the later operations.", s => load = true }
+                {"load", "Verifies and makes the key findable for the later operations.", s => load = true },
+                {"size|s=", "Allows you to specify the key size (deafult to 128)", (int v) => keySize = v }
             };
         }
 
@@ -36,18 +39,18 @@ namespace EConfig.Services
             return 1;
         }
 
-        private static void GenerateAndWriteKeys()
+        private void GenerateAndWriteKeys()
         {
             var keypair = GenerateKeypair();
 
             PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(keypair.Private);
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keypair.Public);
 
-            logger.Info($"public: {FromByteToHex(publicKeyInfo.ToAsn1Object().GetDerEncoded())}");
-            logger.Info($"private: {FromByteToHex(privateKeyInfo.ToAsn1Object().GetDerEncoded())}");
+            logger.Info($"public: {Hex.FromByte(publicKeyInfo.ToAsn1Object().GetDerEncoded())}");
+            logger.Info($"private: {Hex.FromByte(privateKeyInfo.ToAsn1Object().GetDerEncoded())}");
         }
 
-        private static AsymmetricCipherKeyPair GenerateKeypair()
+        private AsymmetricCipherKeyPair GenerateKeypair()
         {
             byte[] seed = new byte[16];
             RNGCryptoServiceProvider a = new RNGCryptoServiceProvider();
@@ -57,7 +60,7 @@ namespace EConfig.Services
             secureRandom.SetSeed(seed);
 
             RsaKeyPairGenerator rsaGenny = new RsaKeyPairGenerator();
-            rsaGenny.Init(new KeyGenerationParameters(secureRandom, 32));
+            rsaGenny.Init(new KeyGenerationParameters(secureRandom, this.keySize));
 
             return rsaGenny.GenerateKeyPair();
         }

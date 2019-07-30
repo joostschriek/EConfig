@@ -17,7 +17,7 @@ using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.X509;
-using static EConfig.Helpers;
+
 
 
 namespace EConfig
@@ -33,7 +33,7 @@ namespace EConfig
             var cmds = new CommandSet("EncryptedConfig")
             {
                 new KeyCommand(),
-                new EncryptionCommand("encrypt")
+                new EncryptCommand()
             };
             
             cmds.Run(args);
