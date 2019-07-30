@@ -14,3 +14,6 @@ d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.csproj.C
 d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.AssemblyInfoInputs.cache
 d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.AssemblyInfo.cs
 d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.csproj.CopyComplete
+d:\Projects\EConfig\EConfig.Tests\bin\Debug\netcoreapp2.2\EConfig.Tests.pdb
+d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.dll
+d:\Projects\EConfig\EConfig.Tests\obj\Debug\netcoreapp2.2\EConfig.Tests.pdb

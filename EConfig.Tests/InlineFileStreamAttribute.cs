@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Castle.Core.Resource;
 using Xunit.Sdk;
 
 namespace EConfig.Tests
@@ -42,6 +43,11 @@ namespace EConfig.Tests
                 }
 
                 streams.Add(File.Open(fullPath, FileMode.Open, FileAccess.ReadWrite));
+            }
+
+            foreach (var stream in streams)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
             }
 
             return new List<object[]> { streams.Cast<object>().ToArray() }.AsEnumerable();

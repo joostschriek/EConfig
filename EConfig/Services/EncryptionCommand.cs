@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Jil;
 using Mono.Options;
 using NLog;
@@ -16,8 +17,11 @@ namespace EConfig.Services
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
+        private List<string> excludedKeys = new List<string> { "PublicKey" };
+
         public string ConfigFilename { get; set; } = "appsettings.json";
-        
+
+
         public EncryptionCommand(string name, string help = null) : base(name, help)
         {
             Options = new OptionSet
@@ -35,24 +39,19 @@ namespace EConfig.Services
 
         private int Encrypt()
         {
+            Dictionary<string, dynamic> config = OpenConfig();
 
-            Dictionary<string, object> config;
-            using (StreamReader configStream = File.OpenText(ConfigFilename))
+            // We assume there is a property in at the root of the json that is called public key and holds our public key for writing values.
+            var publicKey = FindPublicKey(config);
+            if (publicKey == null)
             {
-                var dconfig = JSON.Deserialize<Dictionary<string, dynamic>>(configStream);
-//                System.ComponentModel.TypeConverter tc = System.ComponentModel.TypeDescriptor.GetConverter(dconfig);
-
-                // We assume there is a property in at the root of the json that is called public key and holds our public key for writing values.
-                var publickKey = FindPublicKey(dconfig);
-                if (publickKey == null)
-                {
-                    logger.Error($"Did not find a public key in {ConfigFilename}. Make sure we can find it in the root with the key publicKey");
-                    return 0;
-                }
-
-                // Find every string value we can encrypt
-                
+                logger.Error($"Did not find a public key in {ConfigFilename}. Make sure we can find it in the root with the key publicKey");
+                return 0;
             }
+            
+            FindStringsAndEncrypt(config);
+            
+            SaveConfig(config);
 
             return 1;
         }
@@ -69,8 +68,7 @@ namespace EConfig.Services
             return publikcKey;
         }
 
-        private List<string> excludedKeys = new List<string> {"PublicKey"};
-        private bool FindStringsAndEncrypt(Dictionary<string, dynamic> config)
+        private void FindStringsAndEncrypt(Dictionary<string, dynamic> config)
         {
             foreach (var key in config.Keys)
             {
@@ -82,28 +80,26 @@ namespace EConfig.Services
                 var v = config[key];
                 TypeConverter c = TypeDescriptor.GetConverter(v);
 
-                c.
+                if (c.CanConvertTo(typeof(IDictionary<string, dynamic>)))
+                {
+                    FindStringsAndEncrypt((Dictionary<string, dynamic>) c.ConvertTo(v, typeof(IDictionary<string, dynamic>)));
+                }
 
                 if (ShouldEncrypt(v, c))
                 {
                     logger.Warn($"should encrypt {key}:{config[key]}");
                 }
-
             }
-
-            return true;
         }
 
         private bool ShouldEncrypt(dynamic value, TypeConverter c)
         {
             bool should = false;
-            
-
-            if (c.CanConvertTo(typeof(int)) || c.CanConvertTo(typeof(double)))
+            if (c.CanConvertTo(typeof(int)) || c.CanConvertTo(typeof(double)) || c.CanConvertTo(typeof(bool)))
             {
-                // no-op
+                // no-op, but we want to say no to these types
             }
-            else if (c.CanConvertToString())
+            else if (c.CanConvertTo(typeof(string)))
             {
                 should = true;
             }
@@ -111,8 +107,20 @@ namespace EConfig.Services
             return should;
         }
 
-        private bool 
+        public virtual Dictionary<string, dynamic> OpenConfig()
+        {
+            using (StreamReader configStream = new StreamReader(File.OpenRead(ConfigFilename)))
+            {
+                return JSON.Deserialize<Dictionary<string, dynamic>>(configStream);
+            }
+        }
 
-        public virtual FileStream OpenFile() => File.Open(ConfigFilename, FileMode.Open, FileAccess.ReadWrite);
+        public virtual void SaveConfig(Dictionary<string, dynamic> config)
+        {
+            using (var writer = new StreamWriter(ConfigFilename))
+            {
+                JSON.Serialize(config, writer);
+            }
+        }
     }
 }
