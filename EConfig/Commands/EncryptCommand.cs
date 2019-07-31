@@ -36,11 +36,6 @@ namespace EConfig.Commands
         {
             Options.Parse(arguments);
 
-            return Encrypt();
-        }
-
-        private int Encrypt()
-        {
             config = FileActions.OpenFileFrom(configFilename);
             if (config == null)
             {
@@ -56,15 +51,15 @@ namespace EConfig.Commands
                 return 0;
             }
 
-            encrypt = new Encrypt(publicKey);
+            encrypt = new Encrypt(publicKeyBytes: publicKey);
             Walker.Action = EncryptIf;
             Walker.FindStringValueByKeys(config.Keys.ToList(), config);
-            
+
             FileActions.SaveFileTo(configFilename, config);
 
             return 1;
         }
-
+        
         private byte[] FindPublicKey(Dictionary<string, dynamic> config)
         {
             byte[] publikcKey = null;

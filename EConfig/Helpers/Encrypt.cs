@@ -21,12 +21,17 @@ namespace EConfig.Helpers
         private SecureRandom secureRandom = new SecureRandom();
 
         public byte[] PublicKey { get; private set; }
+        public byte[] PrivateKey { get; private set; }
         public int SymetricKeySize { get; set; } = 128 / 8;
 
 
-        public Encrypt(byte[] publicKeyBytes)
+        public Encrypt(byte[] publicKeyBytes = null, byte[] privateKeyBytes = null)
         {
             PublicKey = publicKeyBytes;
+            if (privateKeyBytes != null)
+            {
+                PrivateKey = privateKeyBytes;
+            } 
         }
 
         public WrappedValue EncryptAndWrap(string value)
