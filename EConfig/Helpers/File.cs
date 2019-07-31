@@ -10,6 +10,11 @@ namespace EConfig.Helpers
     {
         public virtual Dictionary<string, object> OpenFileFrom(string filename)
         {
+            if (!File.Exists(filename))
+            {
+                return null;
+            }
+
             using (StreamReader configStream = new StreamReader(File.OpenRead(filename)))
             {
                 return JSON.Deserialize<Dictionary<string, dynamic>>(configStream);

@@ -15,10 +15,9 @@ namespace EConfig.Commands
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
         public FileActions FileActions { get; set; } = new FileActions();
-        public List<string> ExcludedKeys { get; } = new List<string> {"PublicKey"};
-        public string ConfigFilename { get; set; } = "appsettings.json";
-
-
+        public ConfigWalker Walker { get; set; } = new ConfigWalker();
+        
+        public string configFilename = "appsettings.json";
         private Dictionary<string, dynamic> config;
         private byte[] publicKey;
         private Encrypt encrypt;
@@ -27,7 +26,7 @@ namespace EConfig.Commands
         {
             Options = new OptionSet
             {
-                {"file|f", "The file to load and encrypt (defaults to appsettings.json)", s => this.ConfigFilename = s }
+                {"file|f", "The file to load and encrypt (defaults to appsettings.json)", s => this.configFilename = s }
                 // TODO Add exclusion keys as options
                 // TODO Add ability to rename the "PublickKey" key
             };
@@ -42,25 +41,26 @@ namespace EConfig.Commands
 
         private int Encrypt()
         {
-            if (!File.Exists(ConfigFilename))
+            config = FileActions.OpenFileFrom(configFilename);
+            if (config == null)
             {
-                logger.Error($"Did not find the file \"{ConfigFilename}\".");
+                logger.Error($"Did not find or cold not access the file \"{configFilename}\".");
                 return 0;
             }
-            config = FileActions.OpenFileFrom(ConfigFilename);
 
             // We assume there is a property in at the root of the json that is called public key and holds our public key for writing values.
             publicKey = FindPublicKey(config);
             if (publicKey == null)
             {
-                logger.Error($"Did not find a public key in {ConfigFilename}. Make sure we can find it in the root with the key publicKey");
+                logger.Error($"Did not find a public key in {configFilename}. Make sure we can find it in the root with the key publicKey");
                 return 0;
             }
 
             encrypt = new Encrypt(publicKey);
-            FindStringsAndEncryptByKeys(config.Keys.ToList(), config);
+            Walker.Action = EncryptIf;
+            Walker.FindStringValueByKeys(config.Keys.ToList(), config);
             
-            FileActions.SaveFileTo(ConfigFilename, config);
+            FileActions.SaveFileTo(configFilename, config);
 
             return 1;
         }
@@ -70,48 +70,23 @@ namespace EConfig.Commands
             byte[] publikcKey = null;
             if (config.ContainsKey("PublicKey"))
             {
-                publikcKey = Hex.ToByte((string) config["PublicKey"]);
+                publikcKey = Hex.ToByte((string)config["PublicKey"]);
             }
 
             return publikcKey;
         }
 
-        private bool FindStringsAndEncryptByKeys(List<string> keys, Dictionary<string, dynamic> currentTree)
+        private bool EncryptIf(Dictionary<string, dynamic> currentTree, string key, dynamic value, TypeConverter converter)
         {
-            bool didSomething = false;
-            foreach (var key in keys)
+            var didSomething = false;
+            if (ShouldEncrypt(value, converter))
             {
-                if (ExcludedKeys.Contains(key))
-                {
-                    continue;
-                }
+                logger.Warn($"Encrypting {key}:{value}");
+                var wrap = this.encrypt.EncryptAndWrap((string) value);
+                currentTree[key] = wrap.ToString();
+                logger.Warn($"{key} is now {currentTree[key]}");
 
-                var v = currentTree[key];
-                TypeConverter c = TypeDescriptor.GetConverter(v);
-
-                if (c.CanConvertTo(typeof(IDictionary<string, dynamic>)))
-                {
-                    // This looks weird, but to edit the config object we need to not loop thru config itself (this would break the 
-                    // loop when we edit something). So we keep track with a copy of the keys collection. But we also need to be able
-                    // to set value in sub keys. hence we keep track of the current branch of the config tree we are in.
-                    var treeToFollow = (Dictionary<string, dynamic>) c.ConvertTo(currentTree[key], typeof(IDictionary<string, dynamic>));
-                    if (FindStringsAndEncryptByKeys(treeToFollow.Keys.ToList(), treeToFollow))
-                    {
-                        currentTree[key] = treeToFollow;
-                    }
-
-                    continue;
-                }
-
-                if (ShouldEncrypt(v, c))
-                {
-                    logger.Warn($"Encrypting {key}:{v}");
-                    var wrap = this.encrypt.EncryptAndWrap((string) v);
-                    currentTree[key] = wrap.ToString();
-                    logger.Warn($"{key} is now {currentTree[key]}");
-
-                    didSomething = true;
-                }
+                didSomething = true;
             }
 
             return didSomething;
@@ -126,7 +101,7 @@ namespace EConfig.Commands
             }
             else if (c.CanConvertTo(typeof(string)))
             {
-                // Don't reencrypt a setting
+                // Don't re-encrypt a setting
                 var valueAsString = (string) c.ConvertTo(value, typeof(string));
                 should = !valueAsString.StartsWith("enc", StringComparison.InvariantCultureIgnoreCase);
             }
