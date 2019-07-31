@@ -10,20 +10,19 @@ using Hex = EConfig.Helpers.Hex;
 
 namespace EConfig.Commands
 {
-    public class EncryptCommand : Command
+    public class DecryptCommand : Command
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
         public FileActions FileActions { get; set; } = new FileActions();
-        public List<string> ExcludedKeys { get; } = new List<string> {"PublicKey"};
+        public List<string> ExcludedKeys { get; } = new List<string> { "PublicKey" };
         public string ConfigFilename { get; set; } = "appsettings.json";
-
 
         private Dictionary<string, dynamic> config;
         private byte[] publicKey;
         private Encrypt encrypt;
 
-        public EncryptCommand() : base("encrypt", "encrypts a json file")
+        public DecryptCommand() : base("decrypt", "decrypts a json file")
         {
             Options = new OptionSet
             {
@@ -59,7 +58,7 @@ namespace EConfig.Commands
 
             encrypt = new Encrypt(publicKey);
             FindStringsAndEncryptByKeys(config.Keys.ToList(), config);
-            
+
             FileActions.SaveFileTo(ConfigFilename, config);
 
             return 1;
@@ -70,7 +69,7 @@ namespace EConfig.Commands
             byte[] publikcKey = null;
             if (config.ContainsKey("PublicKey"))
             {
-                publikcKey = Hex.ToByte((string) config["PublicKey"]);
+                publikcKey = Hex.ToByte((string)config["PublicKey"]);
             }
 
             return publikcKey;
@@ -94,7 +93,7 @@ namespace EConfig.Commands
                     // This looks weird, but to edit the config object we need to not loop thru config itself (this would break the 
                     // loop when we edit something). So we keep track with a copy of the keys collection. But we also need to be able
                     // to set value in sub keys. hence we keep track of the current branch of the config tree we are in.
-                    var treeToFollow = (Dictionary<string, dynamic>) c.ConvertTo(currentTree[key], typeof(IDictionary<string, dynamic>));
+                    var treeToFollow = (Dictionary<string, dynamic>)c.ConvertTo(currentTree[key], typeof(IDictionary<string, dynamic>));
                     if (FindStringsAndEncryptByKeys(treeToFollow.Keys.ToList(), treeToFollow))
                     {
                         currentTree[key] = treeToFollow;
@@ -106,7 +105,7 @@ namespace EConfig.Commands
                 if (ShouldEncrypt(v, c))
                 {
                     logger.Warn($"Encrypting {key}:{v}");
-                    var wrap = this.encrypt.EncryptAndWrap((string) v);
+                    var wrap = this.encrypt.EncryptAndWrap((string)v);
                     currentTree[key] = wrap.ToString();
                     logger.Warn($"{key} is now {currentTree[key]}");
 
@@ -127,7 +126,7 @@ namespace EConfig.Commands
             else if (c.CanConvertTo(typeof(string)))
             {
                 // Don't reencrypt a setting
-                var valueAsString = (string) c.ConvertTo(value, typeof(string));
+                var valueAsString = (string)c.ConvertTo(value, typeof(string));
                 should = !valueAsString.StartsWith("enc", StringComparison.InvariantCultureIgnoreCase);
             }
 

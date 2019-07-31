@@ -20,7 +20,7 @@ namespace EConfig.Helpers
         {
             using (var writer = new StreamWriter(filename))
             {
-                JSON.Serialize(config, writer);
+                JSON.SerializeDynamic(config, writer);
             }
         }
     }

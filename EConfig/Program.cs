@@ -1,4 +1,5 @@
 ﻿using EConfig.Commands;
+using Jil;
 using Mono.Options;
 using NLog;
 
@@ -11,6 +12,8 @@ namespace EConfig
 
         public static void Main(string[] args)
         {
+            JSON.SetDefaultOptions(Options.PrettyPrintCamelCase);
+
             var cmds = new CommandSet("EncryptedConfig")
             {
                 new KeyCommand(),
