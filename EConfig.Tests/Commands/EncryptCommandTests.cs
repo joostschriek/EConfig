@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using EConfig.Commands;
 using EConfig.Helpers;
+using Jil;
+using Mono.Options;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -18,40 +21,11 @@ namespace EConfig.Tests.Commands
 
         private Dictionary<string, dynamic> savedConfig;
 
-        private Dictionary<string, object> basic = new Dictionary<string, object>
-            {
-                {
-                    "PublicKey",
-                    "305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001"
-                },
-                {"Name", "joost"}
-            },
-            withSubConfigs = new Dictionary<string, object>
-            {
-                {
-                    "PublicKey",
-                    "305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001"
-                },
-                {"Name", "joost"},
-                {
-                    "SubName", new Dictionary<string, dynamic>
-                    {
-                        {"AnotherName", "Hanan"}
-                    }
-                }
-            },
-            differentTypes = new Dictionary<string, object>
-            {
-                {"isSet", true},
-                {"isList", new List<string> {"Hanan", "Mark", "Yas"}},
-                {"name", "AndreiC"},
-                {"isNubmer", 2},
-                {
-                    "PublicKey",
-                    " 305C300D06092A864886F70D0101010500034B00304802410084C1909EA0B18BC61153D03141A16B935131492FED388F2BF2D612BF5A82BA661F02EC736EBB79115BBAF8742ACA982DC5AE182CEBB4AEDCD1F86B54E0E357810203010001"
-                }
-            };
+        private static string publicKey = "\"PublicKey\": \"305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001\",";
 
+        private Dictionary<string, dynamic> basic = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"Name\": \"joost\" }"),
+            withSubConfigs = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"SubName\": { \"AnotherName\": \"Hanan\" } }"),
+            differentTypes = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"isBool\": true, \"isList\": [ \"Hanan\", \"Mark\", \"Yas\"], \"isNumber\": 2 }");
 
         public EncryptCommandTests()
         {
@@ -67,9 +41,9 @@ namespace EConfig.Tests.Commands
             Assert.NotNull(savedConfig);
             Assert.Contains("Name", savedConfig.Keys.ToList());
             Assert.Contains("PublicKey", savedConfig.Keys.ToList());
-            Assert.Equal(savedConfig["PublicKey"], "305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001");
-            Assert.StartsWith("ENC[", savedConfig["Name"]);
-            Assert.False(((string)savedConfig["Name"]).Contains("joost", StringComparison.InvariantCultureIgnoreCase), 
+            Assert.Equal("305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001", (string)savedConfig["PublicKey"]);
+            Assert.StartsWith("ENC[", (string) savedConfig["Name"]);
+            Assert.False(((string) savedConfig["Name"]).Contains("joost", StringComparison.InvariantCultureIgnoreCase), 
             "name should not contain the original value anymore");
         }
 
@@ -93,16 +67,17 @@ namespace EConfig.Tests.Commands
         [Fact]
         public void HappyPath_ShouldWalkConfigTree()
         {
-            command.FileActions = BuildFileActions(withSubConfigs);
 
+            command.FileActions = BuildFileActions(withSubConfigs);
             command.Invoke(new string[] { });
             
-            Assert.StartsWith("ENC[", savedConfig["SubName"]["AnotherName"]);
+            Assert.NotNull(savedConfig["SubName"]["AnotherName"]);
+            Assert.StartsWith("ENC[", (string) savedConfig["SubName"]["AnotherName"]);
         }
 
         // TODO only encrypt string
 
-        private FileActions BuildFileActions(Dictionary<string, object> toReturn)
+        private FileActions BuildFileActions(Dictionary<string, dynamic> toReturn)
         {
             var file = Substitute.For<FileActions>();
             file.OpenFileFrom(Arg.Any<string>()).Returns(toReturn);

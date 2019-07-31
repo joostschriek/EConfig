@@ -20,7 +20,7 @@ namespace EConfig.Commands
 
         public FileActions FileActions { get; set; } = new FileActions();
 
-        private Dictionary<string, dynamic> config, currentTree;
+        private Dictionary<string, dynamic> config;
         private byte[] publicKey;
         private Encrypt encrypt;
 
@@ -45,7 +45,7 @@ namespace EConfig.Commands
 
         private int Encrypt()
         {
-            this.config = FileActions.OpenFileFrom(ConfigFilename);
+            config = FileActions.OpenFileFrom(ConfigFilename);
 
             // We assume there is a property in at the root of the json that is called public key and holds our public key for writing values.
             publicKey = FindPublicKey(config);
@@ -54,7 +54,7 @@ namespace EConfig.Commands
                 logger.Error($"Did not find a public key in {ConfigFilename}. Make sure we can find it in the root with the key publicKey");
                 return 0;
             }
-            this.encrypt = new Encrypt(publicKey);
+            encrypt = new Encrypt(publicKey);
             FindStringsAndEncryptByKeys(config.Keys.ToList(), config);
             
             FileActions.SaveFileTo(ConfigFilename, config);
@@ -73,8 +73,9 @@ namespace EConfig.Commands
             return publikcKey;
         }
 
-        private void FindStringsAndEncryptByKeys(List<string> keys, Dictionary<string, dynamic> currentTree)
+        private bool FindStringsAndEncryptByKeys(List<string> keys, Dictionary<string, dynamic> currentTree)
         {
+            bool didSomething = false;
             foreach (var key in keys)
             {
                 if (ExcludedKeys.Contains(key))
@@ -91,7 +92,10 @@ namespace EConfig.Commands
                     // loop when we edit something). So we keep track with a copy of the keys collection. But we also need to be able
                     // to set value in sub keys. hence we keep track of the current branch of the config tree we are in.
                     var treeToFollow = (Dictionary<string, dynamic>) c.ConvertTo(currentTree[key], typeof(IDictionary<string, dynamic>));
-                    FindStringsAndEncryptByKeys(currentTree.Keys.ToList(), treeToFollow);
+                    if (FindStringsAndEncryptByKeys(treeToFollow.Keys.ToList(), treeToFollow))
+                    {
+                        currentTree[key] = treeToFollow;
+                    }
 
                     continue;
                 }
@@ -102,8 +106,12 @@ namespace EConfig.Commands
                     var wrap = this.encrypt.EncryptAndWrap((string) v);
                     currentTree[key] = wrap.ToString();
                     logger.Warn($"{key} is now {currentTree[key]}");
+
+                    didSomething = true;
                 }
             }
+
+            return didSomething;
         }
 
         private bool ShouldEncrypt(dynamic value, TypeConverter c)
