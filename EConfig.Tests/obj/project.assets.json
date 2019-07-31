@@ -665,10 +665,11 @@
           "NLog.Schema": "4.6.6"
         },
         "contentFiles": {
-          "contentFiles/any/any/_._": {
+          "contentFiles/any/any/NLog.config": {
             "buildAction": "None",
             "codeLanguage": "any",
-            "copyToOutput": false
+            "copyToOutput": true,
+            "outputPath": "NLog.config"
           }
         }
       },
@@ -6208,6 +6209,8 @@
       "EConfig >= 1.0.0",
       "Microsoft.NET.Test.Sdk >= 15.9.0",
       "Microsoft.NETCore.App >= 2.2.0",
+      "NLog >= 4.6.6",
+      "NLog.Config >= 4.6.6",
       "NSubstitute >= 4.2.1",
       "NSubstitute.Analyzers.CSharp >= 1.0.10",
       "xunit >= 2.4.0",
@@ -6268,6 +6271,14 @@
             "target": "Package",
             "version": "[2.2.0, )",
             "autoReferenced": true
+          },
+          "NLog": {
+            "target": "Package",
+            "version": "[4.6.6, )"
+          },
+          "NLog.Config": {
+            "target": "Package",
+            "version": "[4.6.6, )"
           },
           "NSubstitute": {
             "target": "Package",

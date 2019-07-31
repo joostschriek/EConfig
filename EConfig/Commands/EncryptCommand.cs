@@ -1,38 +1,28 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using EConfig.Helpers;
 using Jil;
 using Mono.Options;
 using NLog;
-using Org.BouncyCastle.Asn1.Crmf;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Encodings;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Paddings;
-using Org.BouncyCastle.Math.EC;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Utilities.Encoders;
-using EConfig.Helpers;
-
 using Hex = EConfig.Helpers.Hex;
 
-namespace EConfig.Services
+namespace EConfig.Commands
 {
     public class EncryptCommand : Command
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
+        public List<string> ExcludedKeys { get; } = new List<string> {"PublicKey"};
         public string ConfigFilename { get; set; } = "appsettings.json";
-        
-        private List<string> excludedKeys = new List<string> { "PublicKey" };
-        private byte[] publicKey;
-        private Dictionary<string, dynamic> config;
-        private Encrypt encrypt;
 
+        public FileActions FileActions { get; set; } = new FileActions();
+
+        private Dictionary<string, dynamic> config, currentTree;
+        private byte[] publicKey;
+        private Encrypt encrypt;
 
         public EncryptCommand() : base("encrypt", "encrypts a json file")
         {
@@ -40,6 +30,7 @@ namespace EConfig.Services
             {
                 {"file", "The file to load and encrypt (defaults to appsettings.json)", s => this.ConfigFilename = s }
                 // TODO Add exclusion keys as options
+                // TODO Add ability to rename the "PublickKey" key
             };
 
             JSON.SetDefaultOptions(Jil.Options.CamelCase);
@@ -47,14 +38,14 @@ namespace EConfig.Services
 
         public override int Invoke(IEnumerable<string> arguments)
         {
-            var opts = Options.Parse(arguments);
+            Options.Parse(arguments);
 
             return Encrypt();
         }
 
         private int Encrypt()
         {
-            this.config = OpenConfig();
+            this.config = FileActions.OpenFileFrom(ConfigFilename);
 
             // We assume there is a property in at the root of the json that is called public key and holds our public key for writing values.
             publicKey = FindPublicKey(config);
@@ -64,9 +55,9 @@ namespace EConfig.Services
                 return 0;
             }
             this.encrypt = new Encrypt(publicKey);
-            FindStringsAndEncryptByKeys(config.Keys.ToList());
+            FindStringsAndEncryptByKeys(config.Keys.ToList(), config);
             
-            SaveConfig(config);
+            FileActions.SaveFileTo(ConfigFilename, config);
 
             return 1;
         }
@@ -82,30 +73,35 @@ namespace EConfig.Services
             return publikcKey;
         }
 
-        private void FindStringsAndEncryptByKeys(List<string> keys)
+        private void FindStringsAndEncryptByKeys(List<string> keys, Dictionary<string, dynamic> currentTree)
         {
             foreach (var key in keys)
             {
-                if (excludedKeys.Contains(key))
+                if (ExcludedKeys.Contains(key))
                 {
                     continue;
                 }
 
-                var v = config[key];
+                var v = currentTree[key];
                 TypeConverter c = TypeDescriptor.GetConverter(v);
 
                 if (c.CanConvertTo(typeof(IDictionary<string, dynamic>)))
                 {
-                    var subConfig = (Dictionary<string, dynamic>) c.ConvertTo(v, typeof(IDictionary<string, dynamic>));
-                    FindStringsAndEncryptByKeys(subConfig.Keys.ToList());
+                    // This looks weird, but to edit the config object we need to not loop thru config itself (this would break the 
+                    // loop when we edit something). So we keep track with a copy of the keys collection. But we also need to be able
+                    // to set value in sub keys. hence we keep track of the current branch of the config tree we are in.
+                    var treeToFollow = (Dictionary<string, dynamic>) c.ConvertTo(currentTree[key], typeof(IDictionary<string, dynamic>));
+                    FindStringsAndEncryptByKeys(currentTree.Keys.ToList(), treeToFollow);
+
+                    continue;
                 }
 
                 if (ShouldEncrypt(v, c))
                 {
                     logger.Warn($"Encrypting {key}:{v}");
                     var wrap = this.encrypt.EncryptAndWrap((string) v);
-                    config[key] = wrap.ToString();
-                    logger.Warn($"{key} is now {config[key]}");
+                    currentTree[key] = wrap.ToString();
+                    logger.Warn($"{key} is now {currentTree[key]}");
                 }
             }
         }
@@ -119,26 +115,11 @@ namespace EConfig.Services
             }
             else if (c.CanConvertTo(typeof(string)))
             {
-                should = true;
+                var valueAsString = (string) c.ConvertTo(value, typeof(string));
+                should = !valueAsString.StartsWith("enc", StringComparison.InvariantCultureIgnoreCase);
             }
 
             return should;
-        }
-
-        public virtual Dictionary<string, object> OpenConfig()
-        {
-            using (StreamReader configStream = new StreamReader(File.OpenRead(ConfigFilename)))
-            {
-                return JSON.Deserialize<Dictionary<string, dynamic>>(configStream);
-            }
-        }
-
-        public virtual void SaveConfig(Dictionary<string, dynamic> config)
-        {
-            using (var writer = new StreamWriter(ConfigFilename))
-            {
-                JSON.Serialize(config, writer);
-            }
         }
     }
 }

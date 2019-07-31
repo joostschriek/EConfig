@@ -11,22 +11,21 @@ using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 
-
-namespace EConfig.Services
+namespace EConfig.Commands
 {
     public class KeyCommand : Command
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
         private bool load = false;
-        private int keySize = 128;
+        private int keySize = 512;
 
         public KeyCommand() : base("key", "Key generation and loading. Will wirte a new key to the output ")
         {
             Options = new OptionSet
             {
                 {"load", "Verifies and makes the key findable for the later operations.", s => load = true },
-                {"size|s=", "Allows you to specify the key size (deafult to 128)", (int v) => keySize = v }
+                {"size|s=", "Allows you to specify the key size (deafult to 512)", (int v) => keySize = v }
             };
         }
 
@@ -64,6 +63,5 @@ namespace EConfig.Services
 
             return rsaGenny.GenerateKeyPair();
         }
-
     }
 }

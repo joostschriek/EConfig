@@ -8,7 +8,9 @@ using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 
 namespace EConfig.Helpers
@@ -32,35 +34,48 @@ namespace EConfig.Helpers
             var valueAsBytes = Encoding.UTF8.GetBytes(value);
 
             // generate AES key and iv
-            Byte[] key = new byte[SymetricKeySize], iv = new byte[16];
+            byte[] key = new byte[SymetricKeySize], iv = new byte[16];
             secureRandom.NextBytes(key);
             secureRandom.NextBytes(iv);
 
-            var encrypedValue = SymEncryption.GetWith(key, iv).Encrypt(valueAsBytes);
-            
-            var encryptedKey = AsymEncryption.GetWith(PublicKey).Encrypt(key);
+            // encrypt all the things
+            var encryptedValue = SymEncryption.GetWith(key, iv).Encrypt(valueAsBytes);
+            var encryptedKey = AsymEncryption.Encryptor(PublicKey).Encrypt(key);
             
             return new WrappedValue
             {
                 EncryptedAESKey = encryptedKey,
                 IV = iv,
-                EncryptedValue = encrypedValue
+                EncryptedValue = encryptedValue
             };
+        }
+
+        public string UnwrapAndDecrypt(WrappedValue wrap)
+        {
+            return string.Empty;
         }
 
         // RSA
         public class AsymEncryption
         {
             public ICipherParameters PublicKey { get; set; }
+            public ICipherParameters PrivateKey { get; set; }
 
-            private AsymEncryption(byte[] publicKey)
+
+            public static AsymEncryption Encryptor(byte[] publicKey)
             {
-                PublicKey = PublicKeyFactory.CreateKey(publicKey);
+                return new AsymEncryption
+                {
+                    PublicKey = PublicKeyFactory.CreateKey(publicKey)
+                };
             }
 
-            public static AsymEncryption GetWith(byte[] publicKey)
+            public static AsymEncryption Decryptor(byte[] privateKey)
             {
-                return new AsymEncryption(publicKey);
+                return new AsymEncryption
+                {
+                    PrivateKey = PrivateKeyFactory.CreateKey(privateKey)
+                };
             }
 
             public byte[] Encrypt(byte[] data)
@@ -69,6 +84,14 @@ namespace EConfig.Helpers
                 rsa_bc.Init(true, PublicKey);
 
                 return rsa_bc.ProcessBlock(data, 0, data.Length);
+            }
+
+            public byte[] Decrypt(byte[] encryptedData)
+            {
+                Pkcs1Encoding rsa_bc = new Pkcs1Encoding(new RsaEngine());
+                rsa_bc.Init(false, PrivateKey);
+
+                return rsa_bc.ProcessBlock(encryptedData, 0, encryptedData.Length);
             }
         }
 

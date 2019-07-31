@@ -10,6 +10,8 @@
         "dependencies": {
           "EConfig": "1.0.0",
           "Microsoft.NET.Test.Sdk": "15.9.0",
+          "NLog": "4.6.6",
+          "NLog.Config": "4.6.6",
           "NSubstitute": "4.2.1",
           "NSubstitute.Analyzers.CSharp": "1.0.10",
           "xunit": "2.4.0",
