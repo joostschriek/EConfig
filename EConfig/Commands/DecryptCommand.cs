@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using EConfig.Helpers;
@@ -16,7 +17,7 @@ namespace EConfig.Commands
 
         public string configFilename = "appsettings.json";
         private Dictionary<string, dynamic> config;
-        private byte[] privateKey;
+        private byte[] privateKey, publicKey;
         private Encrypt encrypt;
 
         public DecryptCommand() : base("decrypt", "decrypt a json file")
@@ -38,10 +39,11 @@ namespace EConfig.Commands
                 return 0;
             }
 
+            publicKey = FindPublicKey(config);
             privateKey = FindPrivateKey();
-            if (privateKey == null)
+            if (privateKey == null || publicKey == null)
             {
-                logger.Error($"Did not find a public key in {configFilename}. Make sure we can find it in the root with the key publicKey");
+                logger.Error($"Did not find a public key or a private key in {configFilename} or the key dir. Make sure we have the public key in the config file, and the private key as a PEM in the key dir.");
                 return 0;
             }
             
@@ -54,15 +56,53 @@ namespace EConfig.Commands
             return 1;
         }
 
-        private bool DecryptIf(Dictionary<string, object> currenttree, string key, object value, TypeConverter converter)
+        private byte[] FindPublicKey(Dictionary<string, dynamic> config)
         {
-            throw new System.NotImplementedException();
+            byte[] publikcKey = null;
+            if (config.ContainsKey("PublicKey"))
+            {
+                publikcKey = Hex.ToByte((string)config["PublicKey"]);
+            }
+
+            return publikcKey;
         }
 
         private byte[] FindPrivateKey()
         {
-
             return new byte[16];
+        }
+
+        private bool DecryptIf(Dictionary<string, object> currenttree, string key, object value, TypeConverter converter)
+        {
+            var didSomething = false;
+            if (ShouldTryDecryption(value, converter))
+            {
+                // TODO properly some try-catch-all error handling to prevent nasty blowups. Nothing fancy. 
+                var wrap = new WrappedValue((string)value);
+                var unwrappedValue = this.encrypt.UnwrapAndDecrypt(wrap);
+                currenttree[key] = unwrappedValue;
+
+                didSomething = true;
+            }
+
+            return didSomething;
+        }
+
+        private bool ShouldTryDecryption(dynamic value, TypeConverter converter)
+        {
+            bool should = false;
+            if (converter.CanConvertTo(typeof(int)) || converter.CanConvertTo(typeof(double)) || converter.CanConvertTo(typeof(bool)))
+            {
+                // no-op, but we want to say no to these types
+            }
+            else if (converter.CanConvertTo(typeof(string)))
+            {
+                // Don't re-encrypt a setting
+                var valueAsString = (string)converter.ConvertTo(value, typeof(string));
+                should = valueAsString.StartsWith("enc", StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            return should;
         }
     }
 }

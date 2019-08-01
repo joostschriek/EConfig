@@ -26,6 +26,8 @@ namespace EConfig.Tests.Helpers
                 Assert.NotNull(wrapped.EncryptedAESKey);
                 Assert.NotNull(wrapped.IV);
                 Assert.NotNull(wrapped.EncryptedValue);
+
+                Assert.False(true, "still have to do the decryption part");
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Security.Cryptography;
 using EConfig.Helpers;
 using Mono.Options;
@@ -17,36 +18,65 @@ namespace EConfig.Commands
     {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
-        private bool load = false;
+        public FileActions File { get; set; } = new FileActions();
+
+        private bool load = false, pem = false;
         private int keySize = 512;
+        private string hexedPrivateKey;
 
         public KeyCommand() : base("key", "Key generation and loading. Will wirte a new key to the output ")
         {
             Options = new OptionSet
             {
-                {"load", "Verifies and makes the key findable for the later operations.", s => load = true },
-                {"size|s=", "Allows you to specify the key size (deafult to 512)", (int v) => keySize = v }
+                {"load=", "Verifies and makes the key findable for the later operations.", (string key) => { this.load = true; this.hexedPrivateKey = key; } },
+                {"size=|s=", "Allows you to specify the key size (deafult to 512)", (int v) => keySize = v },
+                {"pem", "Write the file to disk as id_econfig.pem", _ => pem = true }
             };
         }
 
         public override int Invoke(IEnumerable<string> arguments)
         {
-            var opts = Options.Parse(arguments);
+            Options.Parse(arguments);
 
-            GenerateAndWriteKeys();
+            if (load)
+            {
+                LoadPrivateKeyFromHexed(hexedPrivateKey);
+            }
+            else
+            {
+                GenerateAndWriteKeys();
+            }
 
             return 1;
         }
 
-        private void GenerateAndWriteKeys()
+        public  void GenerateAndWriteKeys()
         {
             var keypair = GenerateKeypair();
 
             PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(keypair.Private);
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keypair.Public);
 
-            logger.Info($"public: {Hex.FromByte(publicKeyInfo.ToAsn1Object().GetDerEncoded())}");
-            logger.Info($"private: {Hex.FromByte(privateKeyInfo.ToAsn1Object().GetDerEncoded())}");
+            string publicKey = Hex.FromByte(publicKeyInfo.ToAsn1Object().GetDerEncoded()),
+                privateKey = Hex.FromByte(privateKeyInfo.ToAsn1Object().GetDerEncoded());
+
+            logger.Info($"public: {publicKey}");
+            logger.Info($"private: {privateKey}");
+
+            if (pem)
+            {
+                File.WritePem(privateKeyInfo);
+                logger.Info("Wrote private key to disk.");
+            }
+        }
+
+        public void LoadPrivateKeyFromHexed(string hexedPrivateKey)
+        {
+            var privateKey = PrivateKeyFactory.CreateKey(Hex.ToByte(hexedPrivateKey));
+            var privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
+
+            File.WritePem(privateKeyInfo);
+            logger.Info($"Loaded key to {Directory.GetCurrentDirectory()}\\id_econfig.pem.");
         }
 
         private AsymmetricCipherKeyPair GenerateKeypair()
