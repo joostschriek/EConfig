@@ -31,9 +31,19 @@ namespace EConfig.Helpers
             }
         }
 
-        public virtual void WritePem(PrivateKeyInfo privateKeyInfo)
+        public virtual byte[] ReadPem(string filename = "id_econfig.pem") 
         {
-            using (var writer = new StreamWriter("id_econfig.pem"))
+            if (!File.Exists(filename))
+            {
+                return null;
+            }     
+
+            return File.ReadAllBytes(filename); 
+        }
+
+        public virtual void WritePem(PrivateKeyInfo privateKeyInfo, string filename = "id_econfig.pem")
+        {
+            using (var writer = new StreamWriter(filename))
             {
                 new PemWriter(writer).WriteObject(new PemObject("RSA PRIVATE KEY", privateKeyInfo.ToAsn1Object().GetDerEncoded()));
             }

@@ -51,7 +51,7 @@ namespace EConfig.Commands
                 return 0;
             }
 
-            encrypt = new Encrypt(publicKeyBytes: publicKey);
+            encrypt = new Encrypt { PublicKey = publicKey };
             Walker.Action = EncryptIf;
             Walker.FindStringValueByKeys(config.Keys.ToList(), config);
 

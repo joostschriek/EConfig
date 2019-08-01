@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text;
 using EConfig.Helpers;
 using NLog.LayoutRenderers.Wrappers;
@@ -15,19 +16,44 @@ namespace EConfig.Tests.Helpers
 
         public class HappyPath : EncryptTests
         {
-            [Fact]
-            public void HappyPath_EncryptAndThenDecrypt()
+            [Theory]
+            [InlineData("Taylor Swift")]
+            [InlineData("Foo Fighters - The Colour And The Shape")]
+            [InlineData("Ooh love, ooh loverboy\nWhat're you doin' tonight, hey, boy?\nSet my alarm, turn on my charm\nThat's because I'm a good old-fashioned loverboy")]
+            [InlineData("The rain is here And you my dear Are still my friend Its true the two of us Are back as one again I was the one who left you Always coming back I cannot forget you girl Now I am up in arms again The rain is here And you my dear Are still my friend It's true the two of us Are back as one again  I was the one who left you Always coming back I cannot forget you girl Now I am up in arms again Together now I don't know how This love could end My lonely heart It falls apart For you to mend I was the one who left you Always coming back I cannot forget you girl Now I am up in arms again I was the one who left you Always coming back I cannot forget you girl Now I am up in arms again I was the one who left you Always coming back I cannot forget you girl Now I am up in arms again")]
+            public void HappyPath_EncryptAndThenDecrypt(string value)
             {
-                var e = new Encrypt(publicKey);
+                var e = new Encrypt { PublicKey = publicKey, PrivateKey = privateKey };
 
-                var wrapped = e.EncryptAndWrap("TaylorSwift");
+                WrappedValue wrapped = e.EncryptAndWrap(value);
 
                 Assert.NotNull(wrapped);
                 Assert.NotNull(wrapped.EncryptedAESKey);
                 Assert.NotNull(wrapped.IV);
                 Assert.NotNull(wrapped.EncryptedValue);
 
-                Assert.False(true, "still have to do the decryption part");
+                string wrapHexed = wrapped.ToString();
+
+                Assert.NotNull(wrapHexed);
+                Assert.NotEqual(string.Empty, wrapHexed);
+
+                WrappedValue unhexedWrap = null;
+                try
+                {
+                    unhexedWrap = new WrappedValue(wrapHexed);
+                }
+                catch
+                {
+                    // no-op
+                }
+
+                Assert.NotNull(unhexedWrap);
+                Assert.Equal(wrapped.EncryptedValue, unhexedWrap.EncryptedValue);
+
+                string decryptedValue = e.UnwrapAndDecrypt(unhexedWrap);
+
+                Assert.NotNull(decryptedValue);
+                Assert.Equal(value, decryptedValue);
             }
         }
 
@@ -49,9 +75,6 @@ namespace EConfig.Tests.Helpers
             }
         }
 
-        public class AESTets : EncryptTests
-        {
-
-        }
+        public class AESTets : EncryptTests { }
     }
 }

@@ -46,8 +46,8 @@ namespace EConfig.Commands
                 logger.Error($"Did not find a public key or a private key in {configFilename} or the key dir. Make sure we have the public key in the config file, and the private key as a PEM in the key dir.");
                 return 0;
             }
-            
-            encrypt = new Encrypt(privateKeyBytes: privateKey);
+
+            encrypt = new Encrypt { PublicKey = publicKey, PrivateKey = privateKey };
             Walker.Action = DecryptIf;
             Walker.FindStringValueByKeys(config.Keys.ToList(), config);
 
@@ -67,10 +67,7 @@ namespace EConfig.Commands
             return publikcKey;
         }
 
-        private byte[] FindPrivateKey()
-        {
-            return new byte[16];
-        }
+        private byte[] FindPrivateKey() => FileActions.ReadPem();
 
         private bool DecryptIf(Dictionary<string, object> currenttree, string key, object value, TypeConverter converter)
         {
