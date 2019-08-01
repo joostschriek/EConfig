@@ -20,16 +20,16 @@ namespace EConfig.Commands
 
         public FileActions File { get; set; } = new FileActions();
 
-        private bool load = false, pem = false;
+        private bool load, pem;
         private int keySize = 512;
         private string hexedPrivateKey;
 
-        public KeyCommand() : base("key", "Key generation and loading. Will wirte a new key to the output ")
+        public KeyCommand() : base("key", "Key generation and loading. Will write a new key to the output ")
         {
             Options = new OptionSet
             {
-                {"load=", "Verifies and makes the key findable for the later operations.", (string key) => { this.load = true; this.hexedPrivateKey = key; } },
-                {"size=|s=", "Allows you to specify the key size (deafult to 512)", (int v) => keySize = v },
+                {"load=", "Verifies and makes the key findable for the later operations.", key => { load = true; hexedPrivateKey = key; } },
+                {"size=|s=", "Allows you to specify the key size (defaults to 512)", (int v) => keySize = v },
                 {"pem", "Write the file to disk as id_econfig.pem", _ => pem = true }
             };
         }
@@ -70,9 +70,9 @@ namespace EConfig.Commands
             }
         }
 
-        public void LoadPrivateKeyFromHexed(string hexedPrivateKey)
+        public void LoadPrivateKeyFromHexed(string privateKeyAsHex)
         {
-            var privateKey = PrivateKeyFactory.CreateKey(Hex.ToByte(hexedPrivateKey));
+            var privateKey = PrivateKeyFactory.CreateKey(Hex.ToByte(privateKeyAsHex));
             var privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
 
             File.WritePem(privateKeyInfo);
@@ -89,7 +89,7 @@ namespace EConfig.Commands
             secureRandom.SetSeed(seed);
 
             RsaKeyPairGenerator rsaGenny = new RsaKeyPairGenerator();
-            rsaGenny.Init(new KeyGenerationParameters(secureRandom, this.keySize));
+            rsaGenny.Init(new KeyGenerationParameters(secureRandom, keySize));
 
             return rsaGenny.GenerateKeyPair();
         }

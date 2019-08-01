@@ -17,7 +17,7 @@ namespace EConfig.Commands
         public FileActions FileActions { get; set; } = new FileActions();
         public ConfigWalker Walker { get; set; } = new ConfigWalker();
         
-        public string configFilename = "appsettings.json";
+        private string configFilename = "appsettings.json";
         private Dictionary<string, dynamic> config;
         private byte[] publicKey;
         private Encrypt encrypt;
