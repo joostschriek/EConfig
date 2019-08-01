@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Jil;
 using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Utilities.IO.Pem;
 
 namespace EConfig.Helpers
@@ -38,7 +39,11 @@ namespace EConfig.Helpers
                 return null;
             }     
 
-            return File.ReadAllBytes(filename); 
+            using (var reader = new StreamReader(filename))
+            {
+                var pem = new PemReader(reader).ReadPemObject();
+                return pem.Content;
+            }
         }
 
         public virtual void WritePem(PrivateKeyInfo privateKeyInfo, string filename = "id_econfig.pem")
