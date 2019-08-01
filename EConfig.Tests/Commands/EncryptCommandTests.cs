@@ -48,12 +48,6 @@ namespace EConfig.Tests.Commands
         }
 
         [Fact]
-        public void HappyPath_EncryptThenDecrypt()
-        {
-
-        }
-
-        [Fact]
         public void HappyPath_ShouldNotTryToReencrypt()
         {
             basic["Name"] = "ENC[something";

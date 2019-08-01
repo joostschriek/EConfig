@@ -24,7 +24,7 @@ namespace EConfig.Commands
         {
             Options = new OptionSet
             {
-                {"file|f", "The file to load and encrypt (defaults to appsettings.json)", s => configFilename = s}
+                {"file=|f=", "The file to load and encrypt (defaults to appsettings.json)", s => configFilename = s}
             };
         }
 
@@ -69,16 +69,17 @@ namespace EConfig.Commands
 
         private byte[] FindPrivateKey() => FileActions.ReadPem();
 
-        private bool DecryptIf(Dictionary<string, object> currenttree, string key, object value, TypeConverter converter)
+        private bool DecryptIf(Dictionary<string, object> currenttree, string key, dynamic value, TypeConverter converter)
         {
             var didSomething = false;
             if (ShouldTryDecryption(value, converter))
             {
                 // TODO properly some try-catch-all error handling to prevent nasty blowups. Nothing fancy. 
+                logger.Info($"Decrypting {key}");
                 var wrap = new WrappedValue((string)value);
                 var unwrappedValue = this.encrypt.UnwrapAndDecrypt(wrap);
                 currenttree[key] = unwrappedValue;
-
+                logger.Info($"{key} is now {unwrappedValue}");
                 didSomething = true;
             }
 

@@ -17,7 +17,8 @@ namespace EConfig
             var cmds = new CommandSet("EncryptedConfig")
             {
                 new KeyCommand(),
-                new EncryptCommand()
+                new EncryptCommand(),
+                new DecryptCommand()
             };
             
             cmds.Run(args);

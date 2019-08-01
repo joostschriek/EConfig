@@ -26,7 +26,7 @@ namespace EConfig.Commands
         {
             Options = new OptionSet
             {
-                {"file|f", "The file to load and encrypt (defaults to appsettings.json)", s => this.configFilename = s }
+                {"file=|f=", "The file to load and encrypt (defaults to appsettings.json)", s => this.configFilename = s }
                 // TODO Add exclusion keys as options
                 // TODO Add ability to rename the "PublickKey" key
             };

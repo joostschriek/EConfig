@@ -73,6 +73,7 @@ namespace EConfig.Helpers
             {
                 return new AsymEncryption
                 {
+                    // FIX there is a problem here. we serialize the PrivateKeyInfo, not the PrivateKey
                     PrivateKey = PrivateKeyFactory.CreateKey(privateKey)
                 };
             }
