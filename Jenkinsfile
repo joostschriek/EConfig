@@ -9,6 +9,7 @@ pipeline {
     }
     environment {
         HOME = '/tmp'
+        PROGET_CREDS = credentials('proget-nuget-push')
     }
     stages {
         stage('Install tools') { 
@@ -23,18 +24,31 @@ pipeline {
         }
         stage('Testing') {
             steps {
-                sh 'dotnet test --logger "trx;LogFileName=encryptedConfigTestResults.trx" /p:CollectCoverage=true /p:coverletOutputFormat=cobertura /p:exclude="[xunit.*]*"'
+                sh 'dotnet test --logger "trx;LogFileName=econfigTestResults.trx" /p:CollectCoverage=true /p:coverletOutputFormat=cobertura /p:exclude="[xunit.*]*"'
                 
             }
             post {
                 always {
-                    xunit thresholds: [failed(unstableThreshold: '0'), skipped(unstableThreshold: '20')], tools: [MSTest(deleteOutputFiles: true, failIfNotNew: true, pattern: '**/encryptedConfigTestResults.trx', skipNoTestFiles: false, stopProcessingIfError: true)]
+                    xunit thresholds: [failed(unstableThreshold: '0'), skipped(unstableThreshold: '20')], tools: [MSTest(deleteOutputFiles: true, failIfNotNew: true, pattern: '**/econfigTestResults.trx', skipNoTestFiles: false, stopProcessingIfError: true)]
                     recordIssues tools: [msBuild(), taskScanner(highTags:'FIXME,HACK', normalTags:'TODO', includePattern: '**/*.cs')]
 
                     sh 'mkdir coverage'
-                    sh '$HOME/.dotnet/tools/reportgenerator -reports:EConfig/EConfig.Tests/coverage.cobertura.xml -targetdir:\\coverage -reporttypes:html "-classfilters:-*DTO*"'
+                    sh '$HOME/.dotnet/tools/reportgenerator -reports:EConfig.Tests/coverage.cobertura.xml -targetdir:\\coverage -reporttypes:html "-classfilters:-*DTO*"'
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '\\coverage', reportFiles: 'index.htm', reportName: 'CodeCoverage', reportTitles: ''])
-                    cobertura coberturaReportFile: 'EConfig/EConfig.Tests/coverage.cobertura.xml'
+                    cobertura coberturaReportFile: 'EConfig.Tests/coverage.cobertura.xml'
+                }
+            }
+        }
+        stage('Publish') 
+        {
+            when {
+                branch "master"
+            }
+            steps { 
+                script {
+                    def safe_build_number = getSafeBuildNumber(env.BUILD_NUMBER)
+                    sh "dotnet pack -c Release /p:PackageVersion=1.${safe_build_number}"
+                    sh "dotnet nuget push ./EConfig/nupkg/*.nupkg -k $PROGET_CREDS -s http://10.124.100.97:8080/nuget/NugetComponents"
                 }
             }
         }
@@ -42,8 +56,18 @@ pipeline {
     post {
         always {
             sh 'ls -R'
-            archiveArtifacts artifacts: "**/encryptedConfigTestResults.trx,EConfig/EConfig.Tests/coverage.cobertura.xml,coverage//**"
+            archiveArtifacts artifacts: "**/encryptedConfigTestResults.trx,EConfig.Tests/coverage.cobertura.xml,coverage//**"
             cleanWs()
         }
     }
+}
+
+//This safe build number makes sure that a higher buildNo will always be considered a newer version by visual studio.  (up to 10000 builds)
+String getSafeBuildNumber(String buildNo)
+{
+    while (buildNo.size() < 5) {
+        String a = "0";
+        buildNo = a + buildNo;
+    }
+    return buildNo;
 }

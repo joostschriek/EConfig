@@ -4,15 +4,28 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName />
+
+    <authors>Joost Schriek</authors>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>econfig</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="nupkg\**" />
+    <EmbeddedResource Remove="nupkg\**" />
+    <None Remove="nupkg\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="nlog.config" />
     <None Remove="testappsettings.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="testappsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="nlog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
@@ -21,7 +34,6 @@
     <PackageReference Include="Jil" Version="2.17.0" />
     <PackageReference Include="Mono.Options" Version="5.3.0.1" />
     <PackageReference Include="NLog" Version="4.6.6" />
-    <PackageReference Include="NLog.Config" Version="4.6.6" />
   </ItemGroup>
 
 </Project>
