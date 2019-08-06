@@ -75,11 +75,9 @@ namespace EConfig.Commands
             if (ShouldTryDecryption(value, converter))
             {
                 // TODO properly some try-catch-all error handling to prevent nasty blowups. Nothing fancy. 
-                logger.Info($"Decrypting {key}");
                 var wrap = new WrappedValue((string)value);
                 var unwrappedValue = this.encrypt.UnwrapAndDecrypt(wrap);
                 currenttree[key] = unwrappedValue;
-                logger.Info($"{key} is now {unwrappedValue}");
                 didSomething = true;
             }
 

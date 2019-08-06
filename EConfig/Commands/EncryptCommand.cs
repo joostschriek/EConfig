@@ -77,10 +77,8 @@ namespace EConfig.Commands
             if (ShouldEncrypt(value, converter))
             {
                 // TODO properly some try-catch-all error handling to prevent nasty blowups. Nothing fancy. 
-                logger.Warn($"Encrypting {key}:{value}");
                 var wrap = this.encrypt.EncryptAndWrap((string) value);
                 currentTree[key] = wrap.ToString();
-                logger.Warn($"{key} is now {currentTree[key]}");
 
                 didSomething = true;
             }
