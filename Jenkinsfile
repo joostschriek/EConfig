@@ -53,14 +53,20 @@ pipeline {
             }
             post {
                 success {
-                    def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
-                    def commit = env.GIT_COMMIT.take(7)
-                    slackSend iconEmoji: '', message: ":shipit: ${env.GIT_AUTHOR_NAME} has deployed a new version of :unlock: econfig <$commitUrl|$commit>", username: ''
+                    scipt {
+                        def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
+                        def commit = env.GIT_COMMIT.take(7)
+                        def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
+                        slackSend iconEmoji: '', message: ":shipit: ${env.GIT_AUTHOR_NAME} has deployed a new version of :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>", username: ''
+                    }
                 }
                 failure {
-                    def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
-                    def commit = env.GIT_COMMIT.take(7)
-                    slackSend iconEmoji: '', message: ":x: ${env.GIT_AUTHOR_NAME} failed to deploy :unlock: econfig <$commitUrl|$commit>", username: ''
+                    script {
+                        def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
+                        def commit = env.GIT_COMMIT.take(7)
+                        def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
+                        slackSend iconEmoji: '', message: ":x: ${env.GIT_AUTHOR_NAME} failed to deploy :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>", username: ''
+                    }
                 }
             }
         }
