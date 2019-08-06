@@ -51,6 +51,18 @@ pipeline {
                     sh "dotnet nuget push ./EConfig/nupkg/*.nupkg -k $PROGET_CREDS -s http://10.124.100.97:8080/nuget/NugetComponents"
                 }
             }
+            post {
+                success {
+                    def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
+                    def commit = env.GIT_COMMIT.take(7)
+                    slackSend iconEmoji: '', message: ":shipit: ${env.GIT_AUTHOR_NAME} has deployed a new version of :unlock: econfig <$commitUrl|$commit>", username: ''
+                }
+                failure {
+                    def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
+                    def commit = env.GIT_COMMIT.take(7)
+                    slackSend iconEmoji: '', message: ":x: ${env.GIT_AUTHOR_NAME} failed to deploy :unlock: econfig <$commitUrl|$commit>", username: ''
+                }
+            }
         }
     }
     post {
