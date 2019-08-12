@@ -54,7 +54,6 @@ namespace EConfig.Helpers
             return Encoding.UTF8.GetString(value);
         }
 
-        // RSA
         public class AsymEncryption
         {
             public ICipherParameters PublicKey { get; set; }

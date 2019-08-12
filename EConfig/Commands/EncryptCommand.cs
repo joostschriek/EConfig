@@ -15,7 +15,7 @@ namespace EConfig.Commands
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
 
         public FileActions FileActions { get; set; } = new FileActions();
-        public ConfigWalker Walker { get; set; } = new ConfigWalker();
+        public ConfigStreamer Walker { get; set; } = new ConfigStreamer();
         
         private string configFilename = "appsettings.json";
         private Dictionary<string, dynamic> config;

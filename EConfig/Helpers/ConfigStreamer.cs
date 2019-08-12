@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace EConfig.Helpers
 {
-    public class ConfigWalker
+    public class ConfigStreamer
     {
         public List<string> ExcludedKeys { get; } = new List<string> { "PublicKey" };
 
