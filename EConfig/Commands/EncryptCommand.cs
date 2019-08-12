@@ -16,8 +16,9 @@ namespace EConfig.Commands
 
         public FileActions FileActions { get; set; } = new FileActions();
         public ConfigStreamer Walker { get; set; } = new ConfigStreamer();
-        
-        private string configFilename = "appsettings.json";
+        public string ConfigFilename { get; set; } = "appsettings.json";
+        public string[] KeysToExclude { get; set; } = Array.Empty<string>();
+
         private Dictionary<string, dynamic> config;
         private byte[] publicKey;
         private Encrypt encrypt;
@@ -26,8 +27,8 @@ namespace EConfig.Commands
         {
             Options = new OptionSet
             {
-                {"file=|f=", "The file to load and encrypt (defaults to appsettings.json)", s => this.configFilename = s }
-                // TODO Add exclusion keys as options
+                {"file=|f=", "The file to load and encrypt (defaults to appsettings.json)", s => this.ConfigFilename = s },
+                {"exclude|e=", "CSV list of keys to exclude from encryption", (string e) => this.KeysToExclude = e?.Split(',') }
                 // TODO Add ability to rename the "PublickKey" key
             };
         }
@@ -36,10 +37,10 @@ namespace EConfig.Commands
         {
             Options.Parse(arguments);
 
-            config = FileActions.OpenFileFrom(configFilename);
+            config = FileActions.OpenFileFrom(ConfigFilename);
             if (config == null)
             {
-                logger.Error($"Did not find or cold not access the file \"{configFilename}\".");
+                logger.Error($"Did not find or cold not access the file \"{ConfigFilename}\".");
                 return 0;
             }
 
@@ -47,8 +48,13 @@ namespace EConfig.Commands
             publicKey = FindPublicKey(config);
             if (publicKey == null)
             {
-                logger.Error($"Did not find a public key in {configFilename}. Make sure we can find it in the root with the key publicKey");
+                logger.Error($"Did not find a public key in {ConfigFilename}. Make sure we can find it in the root with the key publicKey");
                 return 0;
+            }
+
+            if (KeysToExclude != null)
+            {
+                logger.Info($"Excluding the following keys from encryption: {String.Join(", ", KeysToExclude)}");
             }
 
             using (new Stopwatch("Encrypting configs"))
@@ -58,7 +64,7 @@ namespace EConfig.Commands
                 Walker.FindStringValueByKeys(config.Keys.ToList(), config);
             }
 
-            FileActions.SaveFileTo(configFilename, config);
+            FileActions.SaveFileTo(ConfigFilename, config);
 
             return 1;
         }
@@ -77,7 +83,7 @@ namespace EConfig.Commands
         private bool EncryptIf(Dictionary<string, dynamic> currentTree, string key, dynamic value, TypeConverter converter)
         {
             var didSomething = false;
-            if (ShouldEncrypt(value, converter))
+            if (!KeysToExclude.Contains(key) && ShouldEncrypt(value, converter))
             {
                 // TODO properly some try-catch-all error handling to prevent nasty blowups. Nothing fancy. 
                 var wrap = this.encrypt.EncryptAndWrap((string) value);

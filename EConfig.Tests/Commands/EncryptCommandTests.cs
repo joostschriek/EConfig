@@ -24,7 +24,7 @@ namespace EConfig.Tests.Commands
         private static string publicKey = "\"PublicKey\": \"305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001\",";
 
         private Dictionary<string, dynamic> basic = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"Name\": \"joost\" }"),
-            withSubConfigs = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"SubName\": { \"AnotherName\": \"Hanan\" } }"),
+            withSubConfigs = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"SubName\": { \"AnotherName\": \"Hanan\", \"Name\": \"Joost\" } }"),
             differentTypes = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"isBool\": true, \"isList\": [ \"Hanan\", \"Mark\", \"Yas\"], \"isNumber\": 2 }");
 
         public EncryptCommandTests()
@@ -67,6 +67,16 @@ namespace EConfig.Tests.Commands
             
             Assert.NotNull(savedConfig["SubName"]["AnotherName"]);
             Assert.StartsWith("ENC[", (string) savedConfig["SubName"]["AnotherName"]);
+        }
+
+        [Fact]
+        public void HappyPath_ExcludesKeys()
+        {
+            command.FileActions = BuildFileActions(withSubConfigs);
+            command.KeysToExclude = new[] { "Name" };
+            command.Invoke(new string[] { });
+
+            Assert.Equal("Joost", (string) savedConfig["SubName"]["Name"]);
         }
 
         // TODO only encrypt string
