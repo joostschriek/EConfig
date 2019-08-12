@@ -1,3 +1,6 @@
+def commits = ""
+def author = ""
+
 pipeline {
     options {
         disableConcurrentBuilds()
@@ -15,6 +18,12 @@ pipeline {
         stage('Install tools') { 
             steps {
                 sh 'dotnet tool install -g dotnet-reportgenerator-globaltool'
+                commits = sh (
+                    script: "git log --graph --pretty=format:\'`%h` - %s <%an>\' --abbrev-commit ${env.GIT_PREVIOUS_COMMIT}..${env.GIT_COMMIT}",
+                    returnStdout: true 
+                )
+                author = sh script: 'git show -s --format=\'%an\' | tr -d \'\\n\'', returnStdout: true
+                author = author.take(author.length())
             }
         }
         stage('Build') {
@@ -25,7 +34,6 @@ pipeline {
         stage('Testing') {
             steps {
                 sh 'dotnet test --logger "trx;LogFileName=econfigTestResults.trx" /p:CollectCoverage=true /p:coverletOutputFormat=cobertura /p:exclude="[xunit.*]*"'
-                
             }
             post {
                 always {
@@ -57,7 +65,7 @@ pipeline {
                         def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
                         def commit = env.GIT_COMMIT.take(7)
                         def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
-                        slackSend iconEmoji: '', message: ":shipit: ${env.GIT_AUTHOR_NAME} has deployed a new version of :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>", username: ''
+                        slackSend iconEmoji: '', message: ":shipit: $author has deployed a new version of :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>\n $commits", username: ''
                     }
                 }
                 failure {
@@ -65,7 +73,8 @@ pipeline {
                         def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
                         def commit = env.GIT_COMMIT.take(7)
                         def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
-                        slackSend iconEmoji: '', message: ":x: ${env.GIT_AUTHOR_NAME} failed to deploy :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>", username: ''
+
+                        slackSend iconEmoji: '', message: ":x: $author failed to deploy :unlock: econfig <$commitUrl|$commit> <$logUrl|Logs>\n $commits", username: ''
                     }
                 }
             }
