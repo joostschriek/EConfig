@@ -18,12 +18,14 @@ pipeline {
         stage('Install tools') { 
             steps {
                 sh 'dotnet tool install -g dotnet-reportgenerator-globaltool'
-                commits = sh (
-                    script: "git log --graph --pretty=format:\'`%h` - %s <%an>\' --abbrev-commit ${env.GIT_PREVIOUS_COMMIT}..${env.GIT_COMMIT}",
-                    returnStdout: true 
-                )
-                author = sh script: 'git show -s --format=\'%an\' | tr -d \'\\n\'', returnStdout: true
-                author = author.take(author.length())
+                script {
+                    commits = sh (
+                        script: "git log --graph --pretty=format:\'`%h` - %s <%an>\' --abbrev-commit ${env.GIT_PREVIOUS_COMMIT}..${env.GIT_COMMIT}",
+                        returnStdout: true 
+                    )
+                    author = sh script: 'git show -s --format=\'%an\' | tr -d \'\\n\'', returnStdout: true
+                    author = author.take(author.length())
+                }
             }
         }
         stage('Build') {
@@ -61,7 +63,7 @@ pipeline {
             }
             post {
                 success {
-                    scipt {
+                    script {
                         def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
                         def commit = env.GIT_COMMIT.take(7)
                         def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
