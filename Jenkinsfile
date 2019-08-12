@@ -61,7 +61,7 @@ pipeline {
             }
             post {
                 success {
-                    scipt {
+                    script {
                         def commitUrl = "${env.GIT_URL.take(env.GIT_URL.length() - 4)}/commit/${env.GIT_COMMIT}"
                         def commit = env.GIT_COMMIT.take(7)
                         def logUrl = "${env.JOB_URL}/${env.BUILD_NUMBER}/console"
