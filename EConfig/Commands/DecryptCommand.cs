@@ -47,9 +47,12 @@ namespace EConfig.Commands
                 return 0;
             }
 
-            encrypt = new Encrypt { PublicKey = publicKey, PrivateKey = privateKey };
-            Walker.Action = DecryptIf;
-            Walker.FindStringValueByKeys(config.Keys.ToList(), config);
+            using (new Stopwatch("Decrypting config"))
+            {
+                encrypt = new Encrypt { PublicKey = publicKey, PrivateKey = privateKey };
+                Walker.Action = DecryptIf;
+                Walker.FindStringValueByKeys(config.Keys.ToList(), config);
+            }
 
             FileActions.SaveFileTo(configFilename, config);
 

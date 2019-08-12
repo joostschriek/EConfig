@@ -40,11 +40,18 @@ namespace EConfig.Commands
 
             if (load)
             {
-                LoadPrivateKeyFromHexed(hexedPrivateKey);
+                using (new Stopwatch("Loading private key"))
+                {
+                    LoadPrivateKeyFromHexed(hexedPrivateKey);
+                }
             }
             else
             {
-                GenerateAndWriteKeys();
+                using (new Stopwatch("Generating key pairs"))
+                {
+                    GenerateAndWriteKeys();
+                }
+
             }
 
             return 1;
