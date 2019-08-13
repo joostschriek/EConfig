@@ -18,14 +18,14 @@ namespace EConfig.Tests.Commands
     public class EncryptCommandTests
     {
         public EncryptCommand command = Substitute.ForPartsOf<EncryptCommand>();
-
         private Dictionary<string, dynamic> savedConfig;
-
         private static string publicKey = "\"PublicKey\": \"305C300D06092A864886F70D0101010500034B003048024100B26316DB56856573156BC9DD1E93D99D5046ED4B63DAFB8AE3659D566425CF91F525480A633870BC0F7AF47ADB4061A215C95FC437636F9107CAFEB37F207CAD0203010001\",";
 
         private Dictionary<string, dynamic> basic = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"Name\": \"joost\" }"),
             withSubConfigs = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"SubName\": { \"AnotherName\": \"Hanan\", \"Name\": \"Joost\" } }"),
-            differentTypes = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"isBool\": true, \"isList\": [ \"Hanan\", \"Mark\", \"Yas\"], \"isNumber\": 2 }");
+            differentTypes = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"isBool\": true, \"isList\": [ \"Hanan\", \"Mark\", \"Yas\"], \"isNumber\": 2 }"),
+            withAlreadyEncryptedValue = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"name\": \"ENC[superfake]\", \"anotherName\": \"dave grohl\" }"),
+            withSubSubKeys = JSON.Deserialize<Dictionary<string, dynamic>>("{ " + publicKey + " \"making\" : { \"a\": { \"bigsubtree\" : \"not ecrypted yet!\" } } }");
 
         public EncryptCommandTests()
         {
@@ -77,6 +77,28 @@ namespace EConfig.Tests.Commands
             command.Invoke(new string[] { });
 
             Assert.Equal("Joost", (string) savedConfig["SubName"]["Name"]);
+        }
+
+        [Fact]
+        public void HappyPath_WithEncryptedAndDecryptKeysMixed_ShouldEncryptPlain() 
+        {
+            command.FileActions = BuildFileActions(withAlreadyEncryptedValue);
+            command.Invoke(new string [] { });
+
+            Assert.NotNull(savedConfig["name"]);
+            Assert.Equal("ENC[superfake]", (string) savedConfig["name"]);
+            Assert.NotNull(savedConfig["anotherName"]);
+            Assert.StartsWith("ENC[", (string) savedConfig["anotherName"]);
+        }
+
+        [Fact]
+        public void HappyPath_WithSubSubKeys() 
+        {
+            command.FileActions = BuildFileActions(withSubSubKeys);
+            command.Invoke(new string [] { });
+            
+            Assert.NotNull(savedConfig["making"]["a"]["bigsubtree"]);
+            Assert.StartsWith("ENC[", (string) savedConfig["making"]["a"]["bigsubtree"]);
         }
 
         // TODO only encrypt string

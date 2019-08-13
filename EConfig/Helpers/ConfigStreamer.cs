@@ -35,6 +35,7 @@ namespace EConfig.Helpers
                     if (FindStringValueByKeys(treeToFollow.Keys.ToList(), treeToFollow))
                     {
                         currentTree[key] = treeToFollow;
+                        didSomething = true;
                     }
 
                     continue;
