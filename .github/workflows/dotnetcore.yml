@@ -22,4 +22,4 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
     - name: package & publish
-      run: nuget setApiKey {{ $secrets.GITHUB_TOKEN }} -Source "github" dotnet pack -c Release && dotnet nuget push "EConfig/nupkg/EConfig.1.0.0.nupkg" --source "github"
+      run: dotnet pack -c Release && dotnet nuget push "EConfig/nupkg/EConfig.1.0.0.nupkg" --source "https://nuget.pkg.github.com/joostschriek/index.json" -k {{ $secrets.GITHUB_TOKEN }}
