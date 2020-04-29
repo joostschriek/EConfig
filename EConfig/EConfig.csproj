@@ -10,7 +10,7 @@
     <ToolCommandName>econfig</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <PackageId>OctocatApp</PackageId>
+    <PackageId>econfig</PackageId>
     <Version>1.0.0</Version>
     <Authors>Joost Schriek</Authors>
     <Company>Joosts nulls</Company>
