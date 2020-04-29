@@ -23,22 +23,3 @@ jobs:
       run: dotnet test --no-restore --verbosity normal
     - name: package & publish
       run: dotnet pack -c Release && dotnet nuget push "EConfig/nupkg/EConfig.1.0.0.nupkg" --source "github"
-    - name: Publish NuGet
-      uses: rohith/publish-nuget@v2.3.0
-      with:
-        # Filepath of the project to be packaged, relative to root of repository
-        PROJECT_FILE_PATH: EConfig/EConfig.csproj
-        # NuGet package id to check against version changes, defaults to project name
-        PACKAGE_NAME: econfig # optional
-        # Filepath containing version info, relative to root of repository
-        VERSION_FILE_PATH: # optional
-        # Regex pattern to extract version info in a capturing group
-        VERSION_REGEX: # optional, default is <Version>(.*)<\/Version>
-        # Static version, useful for external providers like Nerdbank.GitVersioning
-        VERSION_STATIC: # optional
-        # Flag to enable / disable git tagging
-        TAG_COMMIT: # optional, default is true
-        # Format of the git tag, `[*]` gets replaced with version
-        TAG_FORMAT: # optional, default is v*
-        # API key for the NuGet feed
-        NUGET_KEY: # optional
