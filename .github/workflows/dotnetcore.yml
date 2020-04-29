@@ -21,6 +21,8 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+    - name: package & publish
+      run: dotnet pack -c Release && ls -R && dotnet nuget push "bin/Release/econfig.1.0.0.nupkg" --source "github"
     - name: Publish NuGet
       uses: rohith/publish-nuget@v2.3.0
       with:
